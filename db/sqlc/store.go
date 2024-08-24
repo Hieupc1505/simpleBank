@@ -1,8 +1,6 @@
 package sqlc
 
 import (
-	"context"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -12,59 +10,19 @@ import (
 // 	TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error)
 // }
 
-// SQLStore provides all functions to execute SQL queries and transactions
-type SQLStore struct {
-	connPool *pgxpool.Pool
+// Store provides all functions to execute SQL queries and transactions
+type Store struct {
 	*Queries
+	connPool *pgxpool.Pool
 }
 
-// TransferTx perform a money transfer from one account to the other.
-// It creates a transfer record, add account entries, and update accounts'
-func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
-	var result TransferTxResult
-	err := store.execTx(ctx, func(q *Queries) error {
-		var err error
-		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParams{
-			FromAccountID: arg.FromAccountID,
-			ToAccountID:   arg.ToAccountID,
-			Amount:        arg.Amount,
-		})
-		if err != nil {
-			return err
-		}
+var typeKey = struct{}{}
 
-		result.FromEntry, err = q.CreateEntry(ctx, CreateEntryParams{
-			AccountID: arg.FromAccountID,
-			Amount:    -arg.Amount,
-		})
+// NewStore creates a new Store instance
+func NewStore(conn *pgxpool.Pool) *Store {
 
-		if err != nil {
-			return err
-		}
-
-		result.ToEntry, err = q.CreateEntry(ctx, CreateEntryParams{
-			AccountID: arg.ToAccountID,
-			Amount:    arg.Amount,
-		})
-
-		if err != nil {
-			return err
-		}
-
-		//TODO: update accounts' balance
-
-		return nil
-	})
-
-	return result, err
-
-}
-
-// NewStore creates a new SQLStore instance
-func NewStore(conn *pgxpool.Pool) *SQLStore {
-	queries := New(conn) // Khởi tạo Queries bằng conn (hoặc db tương đương)
-	return &SQLStore{
+	return &Store{
 		connPool: conn,
-		Queries:  queries,
+		Queries:  New(conn),
 	}
 }

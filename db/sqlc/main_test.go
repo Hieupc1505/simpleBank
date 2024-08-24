@@ -2,7 +2,6 @@ package sqlc
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -11,22 +10,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var testQueries *Queries
+var testStore *Store
 
 func TestMain(m *testing.M) {
-
 	config, err := util.LoadConfig("../..")
 	if err != nil {
 		log.Fatal("cannot load config:", err)
 	}
-	fmt.Printf("key: %v", config.DBSource)
-	connPool, err := pgxpool.New(context.Background(), config.DBSource)
 
+	connPool, err := pgxpool.New(context.Background(), config.DBSource)
 	if err != nil {
-		log.Fatal("Cannot connect to db: ", err)
+		log.Fatal("cannot connect to db:", err)
 	}
 
-	testQueries = New(connPool)
-
+	testStore = NewStore(connPool)
 	os.Exit(m.Run())
 }
